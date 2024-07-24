@@ -34,7 +34,7 @@ import re
 import pickle
 import json
 
-
+from gaussian_factor import GaussianFactor
 
 ###################################
 # Code stub
@@ -79,16 +79,48 @@ def get_action(sensor_data):
     #    can just be passed to the pgm.
     # 3. Uh is this a Gaussian Model
 
-    actions_dict = {'lights1': 'on', 'lights2': 'on', 'lights3': 'on', 'lights4': 'on',
-                    'lights5': 'on', 'lights6': 'on', 'lights7': 'on', 'lights8': 'on',
-                    'lights9': 'on', 'lights10': 'on', 'lights11': 'on', 'lights12': 'on',
-                    'lights13': 'on', 'lights14': 'on', 'lights15': 'on', 'lights16': 'on',
-                    'lights17': 'on', 'lights18': 'on', 'lights19': 'on', 'lights20': 'on',
-                    'lights21': 'on', 'lights22': 'on', 'lights23': 'on', 'lights24': 'on',
-                    'lights25': 'on', 'lights26': 'on', 'lights27': 'on', 'lights28': 'on',
-                    'lights29': 'on', 'lights30': 'on', 'lights31': 'on', 'lights32': 'on',
-                    'lights33': 'on', 'lights34': 'on'}
-    return actions_dict
+    # actions_dict = {'lights1': 'on', 'lights2': 'on', 'lights3': 'on', 'lights4': 'on',
+    #                 'lights5': 'on', 'lights6': 'on', 'lights7': 'on', 'lights8': 'on',
+    #                 'lights9': 'on', 'lights10': 'on', 'lights11': 'on', 'lights12': 'on',
+    #                 'lights13': 'on', 'lights14': 'on', 'lights15': 'on', 'lights16': 'on',
+    #                 'lights17': 'on', 'lights18': 'on', 'lights19': 'on', 'lights20': 'on',
+    #                 'lights21': 'on', 'lights22': 'on', 'lights23': 'on', 'lights24': 'on',
+    #                 'lights25': 'on', 'lights26': 'on', 'lights27': 'on', 'lights28': 'on',
+    #                 'lights29': 'on', 'lights30': 'on', 'lights31': 'on', 'lights32': 'on',
+    #                 'lights33': 'on', 'lights34': 'on'}
+    
+    # Start with filling initial state if this is the first visit;
+    # Note that the spec says num_people = round(Normal(mean=40, stddev=3)), 
+    # TODO: for now just setting it to always be 40 people but probably need to somehow shift with evidence later?
+    if state == {}:
+        state = {'r1': 0, 'r2': 0, 'r3': 0, 'r4': 0, 'r5': 0, 'r6': 0, 'r7': 0, 'r8': 0, 'r9': 0, 
+                 'r10': 0, 'r11': 0, 'r12': 0, 'r13': 0, 'r14': 0, 'r15': 0, 'r16': 0, 'r17': 0, 
+                 'r18': 0, 'r19': 0, 'r20': 0, 'r21': 0, 'r22': 0, 'r23': 0, 'r24': 0, 'r25': 0, 
+                 'r26': 0, 'r27': 0, 'r28': 0, 'r29': 0, 'r30': 0, 'r31': 0, 'r32': 0, 'r33': 0,
+                 'r34': 0, 'outside': 40}
+    
+    # Transition parameters to learn with training data?
+    p = {'o22': 0.2, '22o': 0.1}
+    
+    # Setting up GaussianFactors
+    # p+name means previous state of that room
+    r22 = GaussianFactor(('r22', 'pr22', 'po'), beta=[(1-p['22o']), p['o22']], b_mean=0, b_var=0.5**2)
+    o = GaussianFactor(('o', 'po', 'pr22'), beta=[(1-p['o22']), p['22o']], b_mean=0, b_var=0.5**2)
+    
+    model = o.join(r22)
+    
+    # Predict people in room 22 and outside
+    new_state = state
+    
+    # Simulate normal distributions and sample new state values
+    emodel = model.evidence(po=state['outside'], pr22=state['r22'])
+    
+    new_state['r22'] = emodel.sample()['r22']
+    new_state['outside'] = emodel.sample()['o']
+    
+    state = new_state
+    
+    return info_to_actions(state)
 
 # Presumably, we're expecting an output of the expected number of people in each room.
 # If there's more than or equal to 0.25 people in the room, turn the light on.
