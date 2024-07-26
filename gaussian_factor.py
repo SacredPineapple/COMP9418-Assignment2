@@ -30,7 +30,7 @@ class GaussianFactor:
             mu, sigma = np.array(mu).reshape((n,)), np.array(sigma).reshape((n,n))
             self.K = np.linalg.inv(sigma)
             self.h = np.linalg.inv(sigma)@mu
-            self.g = -1/2*mu.T@np.linalg.inv(sigma)@mu - np.log((2*np.pi)**(n/2)*np.linalg.det(sigma))
+            self.g = -1/2*mu.T@np.linalg.inv(sigma)@mu - np.log((2*np.pi)**(n/2)*np.linalg.det(sigma)**1/2)
         elif K is not None and h is not None and g is not None:
             self.K = np.array(K).reshape((n,n))
             self.h = np.array(h).reshape((n,))
