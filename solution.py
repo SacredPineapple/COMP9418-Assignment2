@@ -152,19 +152,25 @@ def get_action(sensor_data):
     new_state = state
     
     if sensor_data['motion_sensor2'] == 'no motion':
-        emodel.evidence(r14=0)
-        new_state['r14'] = 0
+        m2 = GaussianFactor(('r14',), mu=0.4, sigma=1)
+        emodel *= m2
     else: 
-        new_state['r14'] = emodel.sample()['r14']
+        # TODO: If the room was initally empty, and we saw motion, what do we do?
+        # new_state['r14'] = emodel.sample()['r14']
+        ...
         
     if sensor_data['motion_sensor4'] == 'no motion':
-        emodel.evidence(r28=0)
-        new_state['r28'] = 0
+        m4 = GaussianFactor(('r28',), mu=0.4, sigma=1)
+        emodel *= m4
     else: 
-        new_state['r28'] = emodel.sample()['r28']
+        # TODO: If the room was initally empty, and we saw motion, what do we do?
+        # new_state['r28'] = emodel.sample()['r28']
+        ...
     
     new_state['r22'] = emodel.sample()['r22']
     new_state['r24'] = emodel.sample()['r24']
+    new_state['r14'] = emodel.sample()['r14']
+    new_state['r28'] = emodel.sample()['r28']
     new_state['outside'] = emodel.sample()['o']
     
     state = new_state
