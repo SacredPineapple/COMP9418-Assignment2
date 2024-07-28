@@ -35,42 +35,42 @@ import pickle
 import json
 
 from gaussian_factor import GaussianFactor
+from smart_building import SmartBuilding
 
-###################################
-# Code stub
+# Provided Code Stub - for submission testing, only get_action will be called.
 #
 # The only requirement of this file is that is must contain a function called get_action,
 # and that function must take sensor_data as an argument, and return an actions_dict
 #
 
-
-# this global state variable demonstrates how to keep track of information over multiple
-# calls to get_action
-state = {}
-
-# cost constants
+# Cost constants
 COST_LIGHT = 1
 COST_PERSON_NO_LIGHT = 4
 
 # Initialising classes, variables, etc.
 # params = pd.read_csv(...)
-# pgm = ProbabilisticGraphicalModel(params) (idk)
+smart_building = SmartBuilding() # TODO: Initialise network with params learnt from data: Network(params)
 
+i = 0
 def get_action(sensor_data):
-    # declare state as a global variable so it can be read and modified within this function
-    global state
-    #global params
+    # Step 1: Increment the network to the next step.
+    smart_building.tick()
 
-    # TODO: Add code to generate your chosen actions, using the current state and sensor_data
-
-    # Step 1: Pass in the sensor data to the PGM, to set evidence
-    # pgm.update_data(sensor_data)
+    # Step 2: Apply the evidence gained from the sensor data
+    smart_building.apply_evidence(sensor_data)
     
-    # Step 2: Query the pgm to get the expected number of people in each area? Maybe?
-    # info = pgm.query()
+    # Step 3: Query the pgm to get the distribution of the number of people in each room
+    info = smart_building.query()
 
-    # Step 3: Use this expected num. people per area to create and return our actions_dict
-    # return info_to_actions(info)
+    # Step 4: Convert each room's distribution into a decision about turning light on/off
+    actions = info_to_actions(info)
+    # Printing for debugging / seeing whats happening
+    global i
+    i += 1
+    # print(f"Info for time {i} is {info}")
+    print(f"Turning on lights {[K for K, V in actions.items() if V == 'on']}")
+
+    return actions
 
     # Other considerations
     # 1. We might want to incorporate things other than just the sensor data into our model
@@ -88,7 +88,7 @@ def get_action(sensor_data):
     #                 'lights25': 'on', 'lights26': 'on', 'lights27': 'on', 'lights28': 'on',
     #                 'lights29': 'on', 'lights30': 'on', 'lights31': 'on', 'lights32': 'on',
     #                 'lights33': 'on', 'lights34': 'on'}
-    
+
     # Start with filling initial state if this is the first visit;
     # Note that the spec says num_people = round(Normal(mean=40, stddev=3)), 
     # TODO: for now just setting it to always be 40 people but probably need to somehow shift with evidence later?
@@ -182,6 +182,6 @@ def get_action(sensor_data):
 # Right now, probs accepts a dictionary of form {'r1': 0.25, 'r2': 0.3, 'r3': 0.1, 'r4': 1, ..., 'c1': 2, 'c2': 0.2, 'outside': '11'}
 # and returns a dictionary of form {'lights1': 'on', 'lights2': 'on', ..., 'lights34': 'off'}
 def info_to_actions(info):
-    actions_dict = {'lights' + str(match.group(1)) : 'off' if nPeople < COST_LIGHT / COST_PERSON_NO_LIGHT else 'on'
-                    for area, nPeople in info.items() if (match := re.match(r'r(\d+)', area))}
+    actions_dict = {'lights' + str(match.group(1)) : 'off' if dist['mean'] < COST_LIGHT / COST_PERSON_NO_LIGHT else 'on'
+                    for area, dist in info.items() if (match := re.match(r'r(\d+)', area))}
     return actions_dict
