@@ -2,12 +2,12 @@
 import numpy as np
 import scipy.sparse as sp
 
-from sensors.camera_sensor import CameraSensor
-from sensors.door_sensor import DoorSensor
-from sensors.motion_sensor import MotionSensor
-from sensors.robot_sensor import RobotSensor
+from camera_sensor import CameraSensor
+from door_sensor import DoorSensor
+from motion_sensor import MotionSensor
+from robot_sensor import RobotSensor
 
-from data_store import transitions
+from data_store import getTransitions
 
 class SmartBuilding:
     def __init__(self):
@@ -25,12 +25,14 @@ class SmartBuilding:
         #   - Lunch hour
         #   - Afternoon work block
         #   - Late afternoon leaving office
-        t_m = sp.csr_array((self.nAreas, self.nAreas))
-        for i, j, k in transitions:
-            t_m[i, j] = k
+        # t_m = sp.csr_array((self.nAreas, self.nAreas))
+        t_m = np.zeros((self.nAreas, self.nAreas))
+        for i, ns in getTransitions().items():
+            for j, k in ns:
+                t_m[i, j] = k
         self.t_matrix = t_m
         # Element-wise square, for the variance transitions
-        self.t_matrix_sq = np.square(self.t_matrix)
+        self.t_matrix_sq = sp.csr_array(t_m)
 
         # Initial state is a N(40, 9) distribution outside
         # We store the state as follows:

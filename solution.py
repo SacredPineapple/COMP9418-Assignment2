@@ -68,7 +68,17 @@ def get_action(sensor_data):
     global i
     i += 1
     # print(f"Info for time {i} is {info}")
-    print(f"Turning on lights {[K for K, V in actions.items() if V == 'on']}")
+    # print(f"Turning on lights {[K for K, V in actions.items() if V == 'on']}")
+
+    actions_dict = {'lights1': 'on', 'lights2': 'on', 'lights3': 'on', 'lights4': 'on',
+                    'lights5': 'on', 'lights6': 'on', 'lights7': 'on', 'lights8': 'on',
+                    'lights9': 'on', 'lights10': 'on', 'lights11': 'on', 'lights12': 'on',
+                    'lights13': 'on', 'lights14': 'on', 'lights15': 'on', 'lights16': 'on',
+                    'lights17': 'on', 'lights18': 'on', 'lights19': 'on', 'lights20': 'on',
+                    'lights21': 'on', 'lights22': 'on', 'lights23': 'on', 'lights24': 'on',
+                    'lights25': 'on', 'lights26': 'on', 'lights27': 'on', 'lights28': 'on',
+                    'lights29': 'on', 'lights30': 'on', 'lights31': 'on', 'lights32': 'on',
+                    'lights33': 'on', 'lights34': 'on'}
 
     return actions
 
@@ -78,16 +88,6 @@ def get_action(sensor_data):
     # 2. Maybe needs more classes? Something to process the sensor data into a form which 
     #    can just be passed to the pgm.
     # 3. Uh is this a Gaussian Model
-
-    # actions_dict = {'lights1': 'on', 'lights2': 'on', 'lights3': 'on', 'lights4': 'on',
-    #                 'lights5': 'on', 'lights6': 'on', 'lights7': 'on', 'lights8': 'on',
-    #                 'lights9': 'on', 'lights10': 'on', 'lights11': 'on', 'lights12': 'on',
-    #                 'lights13': 'on', 'lights14': 'on', 'lights15': 'on', 'lights16': 'on',
-    #                 'lights17': 'on', 'lights18': 'on', 'lights19': 'on', 'lights20': 'on',
-    #                 'lights21': 'on', 'lights22': 'on', 'lights23': 'on', 'lights24': 'on',
-    #                 'lights25': 'on', 'lights26': 'on', 'lights27': 'on', 'lights28': 'on',
-    #                 'lights29': 'on', 'lights30': 'on', 'lights31': 'on', 'lights32': 'on',
-    #                 'lights33': 'on', 'lights34': 'on'}
 
     # Start with filling initial state if this is the first visit;
     # Note that the spec says num_people = round(Normal(mean=40, stddev=3)), 

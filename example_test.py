@@ -137,12 +137,12 @@ class SmartBuildingSimulatorExample:
         for sensor in self.motion_sensors:
             sensor_data[sensor.name] = current_data[sensor.name]
         for sensor in self.camera_sensors:
-            sensor_data[sensor.name] = current_data[sensor.name]
+            sensor_data[sensor.name] = int(current_data[sensor.name])
         for robot in self.robot_sensors:
             robot.timestep(self)
-            sensor_data[robot.name] = current_data[robot.name]
+            sensor_data[robot.name] = ast.literal_eval(current_data[robot.name])
         for sensor in self.door_sensors:
-            sensor_data[sensor.name] = current_data[sensor.name]
+            sensor_data[sensor.name] = int(current_data[sensor.name])
 
         # To make sure your code can handle this case,
         # set one random sensor to None
