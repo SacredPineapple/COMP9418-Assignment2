@@ -79,12 +79,16 @@ def get_action(sensor_data):
             mu, sigma = means[i], np.sqrt(vars[i])
             value = true_state['r'+str(i+1)]
             zscore = (value - mu) / sigma
+            light_status = actions['lights' + str(i+1)]
+
             str1 = f"Room {i+1}: {value} ~ N({round(mu, 4)}, {round(sigma, 4)}): "
-            str2 = f"{'ON' if actions['lights' + str(i+1)] == 'on' else 'OFF'} "
+            str2 = f"{'ON' if light_status == 'on' else 'OFF'} "
             str3 = f"z-score: {round(zscore, 4)}"
             print(str1 + str2 + str3)
             if np.abs(zscore) > 2:
                 print("NORMAL DIST INSUFFICIENT HERE - OVERCONFIDENT")
+            if value == 0 and light_status == 'on':
+                print("TURNED LIGHT ON FOR NO REASON RIP")
 
     step += 1
 
