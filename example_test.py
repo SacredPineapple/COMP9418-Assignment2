@@ -32,6 +32,7 @@ import ast
 
 # import the function written by the student
 from solution import get_action
+from solution import update_true_state
 
 # simulator code
 class Person:    
@@ -137,12 +138,12 @@ class SmartBuildingSimulatorExample:
         for sensor in self.motion_sensors:
             sensor_data[sensor.name] = current_data[sensor.name]
         for sensor in self.camera_sensors:
-            sensor_data[sensor.name] = int(current_data[sensor.name])
+            sensor_data[sensor.name] = current_data[sensor.name]
         for robot in self.robot_sensors:
             robot.timestep(self)
-            sensor_data[robot.name] = ast.literal_eval(current_data[robot.name])
+            sensor_data[robot.name] = current_data[robot.name]
         for sensor in self.door_sensors:
-            sensor_data[sensor.name] = int(current_data[sensor.name])
+            sensor_data[sensor.name] = current_data[sensor.name]
 
         # To make sure your code can handle this case,
         # set one random sensor to None
@@ -179,9 +180,16 @@ class SmartBuildingSimulatorExample:
 
 simulator = SmartBuildingSimulatorExample()
 total_cost = 0
+trueDataCols = ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2'] + ['outside']
 for i in range(len(simulator.data)):
+    true_data = simulator.data.iloc[i]
+    true_data = true_data[trueDataCols]
+    true_data = dict(true_data)
+    update_true_state(true_data)
+
     sensor_data = simulator.timestep()
     actions_dict = get_action(sensor_data)   
     total_cost += simulator.cost_timestep(actions_dict)
+
 
 print(f"Total cost for the day: {total_cost} cents")

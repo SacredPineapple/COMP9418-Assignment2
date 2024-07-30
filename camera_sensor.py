@@ -15,7 +15,7 @@ class CameraSensor:
 
         # 95% of the time the true measure is within 0.7-1.3 times the mean i.e. 1.s.d = 0.15*mean)
         # Using the observed value as our guess for the true mean.
-        self.vars = 0.15**2 * self.count**2 + 0.01
+        self.vars = (0.1**2 * self.count**2) + 0.01
 
     # Apply evidence on the room distributions given the currently stored evidence.
     # Takes in the current means and vars, and returns the new means and vars.

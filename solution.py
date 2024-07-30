@@ -13,6 +13,7 @@ from __future__ import print_function
 # Allowed libraries
 import numpy as np
 import pandas as pd
+import scipy
 import scipy.sparse as sp
 import scipy.special
 import heapq as pq
@@ -51,7 +52,12 @@ COST_PERSON_NO_LIGHT = 4
 # params = pd.read_csv(...)
 smart_building = SmartBuilding() # TODO: Initialise network with params learnt from data: Network(params)
 
-i = 0
+step = 0
+true_state = None
+def update_true_state(data):
+    global true_state
+    true_state = data
+
 def get_action(sensor_data):
     # Step 1: Increment the network to the next step.
     smart_building.tick()
@@ -60,15 +66,27 @@ def get_action(sensor_data):
     smart_building.apply_evidence(sensor_data)
     
     # Step 3: Query the pgm to get the distribution of the number of people in each room
-    info = smart_building.query()
+    means, vars = smart_building.query()
 
     # Step 4: Convert each room's distribution into a decision about turning light on/off
-    actions = info_to_actions(info)
+    actions = info_to_actions(means, vars)
+
     # Printing for debugging / seeing whats happening
-    global i
-    i += 1
-    # print(f"Info for time {i} is {info}")
-    # print(f"Turning on lights {[K for K, V in actions.items() if V == 'on']}")
+    global step
+    if step % 500 == 0:
+        print(f"----------------Time {step}----------------")
+        for i in range(34):
+            mu, sigma = means[i], np.sqrt(vars[i])
+            value = true_state['r'+str(i+1)]
+            zscore = (value - mu) / sigma
+            str1 = f"Room {i+1}: {value} ~ N({round(mu, 4)}, {round(sigma, 4)}): "
+            str2 = f"{'ON' if actions['lights' + str(i+1)] == 'on' else 'OFF'} "
+            str3 = f"z-score: {round(zscore, 4)}"
+            print(str1 + str2 + str3)
+            if np.abs(zscore) > 2:
+                print("NORMAL DIST INSUFFICIENT HERE - OVERCONFIDENT")
+
+    step += 1
 
     actions_dict = {'lights1': 'on', 'lights2': 'on', 'lights3': 'on', 'lights4': 'on',
                     'lights5': 'on', 'lights6': 'on', 'lights7': 'on', 'lights8': 'on',
@@ -85,9 +103,6 @@ def get_action(sensor_data):
     # Other considerations
     # 1. We might want to incorporate things other than just the sensor data into our model
     #    e.g. time of day, certain movement behaviours and patterns, hypothesised room functions
-    # 2. Maybe needs more classes? Something to process the sensor data into a form which 
-    #    can just be passed to the pgm.
-    # 3. Uh is this a Gaussian Model
 
     # Start with filling initial state if this is the first visit;
     # Note that the spec says num_people = round(Normal(mean=40, stddev=3)), 
@@ -177,11 +192,20 @@ def get_action(sensor_data):
     
     return info_to_actions(state)
 
-# Presumably, we're expecting an output of the expected number of people in each room.
-# If there's more than or equal to 0.25 people in the room, turn the light on.
-# Right now, probs accepts a dictionary of form {'r1': 0.25, 'r2': 0.3, 'r3': 0.1, 'r4': 1, ..., 'c1': 2, 'c2': 0.2, 'outside': '11'}
-# and returns a dictionary of form {'lights1': 'on', 'lights2': 'on', ..., 'lights34': 'off'}
-def info_to_actions(info):
-    actions_dict = {'lights' + str(match.group(1)) : 'off' if dist['mean'] < COST_LIGHT / COST_PERSON_NO_LIGHT else 'on'
-                    for area, dist in info.items() if (match := re.match(r'r(\d+)', area))}
+# Accepts an input of form np.array([r1_mean, r2_mean, ...]), np.array([r1_vars, r2_vars, ...])
+# Returns dictionary of form {'lights1': 'on', 'lights2': 'on', ..., 'lights34': 'off'}
+# Compares the expected cost of turning a light on (COST_LIGHT) vs. turning a light off (some integral) to determine action.
+# Math was used to determine the integral formula, and is used here (maybe put this in the report?)
+def info_to_actions(mus, vars):
+    sigmas = np.sqrt(vars)
+    pow = - mus**2 / (2*vars)
+    term1 = ( sigmas / np.sqrt(2*np.pi) ) * np.exp(pow)
+    term2 = mus * scipy.stats.norm.sf(0, loc=mus, scale=sigmas)
+    cost_light_off = (term1 + term2) * COST_PERSON_NO_LIGHT
+
+    # for mu, var, cost in zip(mus, vars, cost_light_off):
+    #     print(f"N({mu}, {var}) has cost {cost})")
+    
+    light_on = cost_light_off > 1
+    actions_dict = {'lights' + str(i+1): 'on' if light_on[i] else 'off' for i in range(34)}
     return actions_dict

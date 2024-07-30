@@ -1,3 +1,5 @@
+import ast
+
 from gaussian_factor import GaussianFactor
 
 class RobotSensor:
@@ -11,11 +13,13 @@ class RobotSensor:
         if data == None:
             self.count = None
             return
+        
+        data = ast.literal_eval(data)
         self.room = self.name_to_idx[data[0]]
         self.count = data[1]
 
-        # 95% of the time the true measure is within 0.7-1.3 times the mean i.e. 1.s.d = 0.15*mean)
-        self.vars = 0.15**2 * self.count**2 + 0.01
+        # 95% of the time the true measure is within 0.8-1.2 times the mean i.e. 1.s.d = 0.1*mean)
+        self.vars = (0.1**2 * self.count**2) + 0.01
 
     # Apply evidence on the room distributions given the currently stored evidence.
     # Takes in the current means and vars, and returns the new means and vars.
