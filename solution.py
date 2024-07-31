@@ -50,7 +50,12 @@ COST_PERSON_NO_LIGHT = 4
 
 # Initialising classes, variables, etc.
 # params = pd.read_csv(...)
-smart_building = SmartBuilding() # TODO: Initialise network with params learnt from data: Network(params)
+from data_store import getTransitions
+t_m = np.zeros((37, 37))
+for i, ns in getTransitions().items():
+    for j, k in ns:
+        t_m[i, j] = k
+smart_building = SmartBuilding(t_m)
 
 step = 0
 true_state = None
@@ -72,25 +77,30 @@ def get_action(sensor_data):
     actions = info_to_actions(means, vars)
 
     # Printing for debugging / seeing whats happening
-    global step
-    if step % 500 == 0:
-        print(f"----------------Time {step}----------------")
-        for i in range(34):
-            mu, sigma = means[i], np.sqrt(vars[i])
-            value = true_state['r'+str(i+1)]
-            zscore = (value - mu) / sigma
-            light_status = actions['lights' + str(i+1)]
+    # global step
+    # if step % 500 == 0:
+    #     print(f"----------------Time {step}----------------")
+    #     for i in range(34):
+    #         mu, sigma = means[i], np.sqrt(vars[i])
+    #         value = true_state['r'+str(i+1)]
+    #         zscore = (value - mu) / sigma
+    #         light_status = actions['lights' + str(i+1)]
 
-            str1 = f"Room {i+1}: {value} ~ N({round(mu, 4)}, {round(sigma, 4)}): "
-            str2 = f"{'ON' if light_status == 'on' else 'OFF'} "
-            str3 = f"z-score: {round(zscore, 4)}"
-            print(str1 + str2 + str3)
-            if np.abs(zscore) > 2:
-                print("NORMAL DIST INSUFFICIENT HERE - OVERCONFIDENT")
-            if value == 0 and light_status == 'on':
-                print("TURNED LIGHT ON FOR NO REASON RIP")
+    #         str1 = f"Room {i+1}: {value} ~ N({round(mu, 4)}, {round(sigma, 4)}): "
+    #         str2 = f"{'ON' if light_status == 'on' else 'OFF'} "
+    #         str3 = f"z-score: {round(zscore, 4)}"
+    #         print(str1 + str2 + str3)
+    #         if np.abs(zscore) > 2:
+    #             print("NORMAL DIST INSUFFICIENT HERE - OVERCONFIDENT")
+    #         if value == 0 and light_status == 'on':
+    #             print("TURNED LIGHT ON FOR NO REASON RIP")
+    # step += 1
 
-    step += 1
+    return actions
+
+    # Other considerations
+    # 1. We might want to incorporate things other than just the sensor data into our model
+    #    e.g. time of day, certain movement behaviours and patterns, hypothesised room functions
 
     actions_dict = {'lights1': 'on', 'lights2': 'on', 'lights3': 'on', 'lights4': 'on',
                     'lights5': 'on', 'lights6': 'on', 'lights7': 'on', 'lights8': 'on',
@@ -101,12 +111,6 @@ def get_action(sensor_data):
                     'lights25': 'on', 'lights26': 'on', 'lights27': 'on', 'lights28': 'on',
                     'lights29': 'on', 'lights30': 'on', 'lights31': 'on', 'lights32': 'on',
                     'lights33': 'on', 'lights34': 'on'}
-
-    return actions
-
-    # Other considerations
-    # 1. We might want to incorporate things other than just the sensor data into our model
-    #    e.g. time of day, certain movement behaviours and patterns, hypothesised room functions
 
     # Start with filling initial state if this is the first visit;
     # Note that the spec says num_people = round(Normal(mean=40, stddev=3)), 

@@ -7,10 +7,8 @@ from door_sensor import DoorSensor
 from motion_sensor import MotionSensor
 from robot_sensor import RobotSensor
 
-from data_store import getTransitions
-
 class SmartBuilding:
-    def __init__(self):
+    def __init__(self, transition_matrix):
         # outside has index 0, r1-34 have index 1-34, c1 and c2 have index 35, 36
         # Helper maps. Convention is that internally, we use the indexes (numbers) for everything,
         # and only convert it back to names when returning a query.
@@ -26,13 +24,9 @@ class SmartBuilding:
         #   - Afternoon work block
         #   - Late afternoon leaving office
         # t_m = sp.csr_array((self.nAreas, self.nAreas))
-        t_m = np.zeros((self.nAreas, self.nAreas))
-        for i, ns in getTransitions().items():
-            for j, k in ns:
-                t_m[i, j] = k
-        self.t_matrix = t_m
+        self.t_matrix = sp.csr_array(transition_matrix)
         # Element-wise square, for the variance transitions
-        self.t_matrix_sq = sp.csr_array(t_m)
+        self.t_matrix_sq = self.t_matrix * self.t_matrix
 
         # Initial state is a N(40, 9) distribution outside
         # We store the state as follows:
@@ -76,7 +70,7 @@ class SmartBuilding:
         # Adjust the state_means and state_vars as by the transition matrix.
         # Variance will also increase per tick based on the uncertainty of movement.
         self.state_means = self.state_means @ self.t_matrix
-        self.state_vars = self.state_vars @ self.t_matrix_sq + 0.075 * self.state_means
+        self.state_vars = self.state_vars @ self.t_matrix_sq + 2.5 * self.state_means
     
     ### Incorporate the evidence from the sensor data to the current model. 
     def apply_evidence(self, sensor_data):
