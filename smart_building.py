@@ -76,7 +76,7 @@ class SmartBuilding:
         # Adjust the state_means and state_vars as by the transition matrix.
         # Variance will also increase per tick based on the uncertainty of movement.
         self.state_means = self.state_means @ self.t_matrix
-        self.state_vars = self.state_vars @ self.t_matrix_sq + 0.25 * self.state_means
+        self.state_vars = self.state_vars @ self.t_matrix_sq + 0.075 * self.state_means
     
     ### Incorporate the evidence from the sensor data to the current model. 
     def apply_evidence(self, sensor_data):
