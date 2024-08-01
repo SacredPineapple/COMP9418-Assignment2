@@ -214,6 +214,6 @@ def info_to_actions(mus, vars):
     # for mu, var, cost in zip(mus, vars, cost_light_off):
     #     print(f"N({mu}, {var}) has cost {cost})")
     
-    light_on = cost_light_off > 1
+    light_on = cost_light_off > COST_LIGHT
     actions_dict = {'lights' + str(i+1): 'on' if light_on[i] else 'off' for i in range(34)}
     return actions_dict

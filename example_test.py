@@ -178,18 +178,18 @@ class SmartBuildingSimulatorExample:
                 raise Exception("Invalid light state")
         return cost
 
-simulator = SmartBuildingSimulatorExample()
-total_cost = 0
-trueDataCols = ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2'] + ['outside']
-for i in range(len(simulator.data)):
-    true_data = simulator.data.iloc[i]
-    true_data = true_data[trueDataCols]
-    true_data = dict(true_data)
-    update_true_state(true_data)
+if __name__ == "__main__":
+    simulator = SmartBuildingSimulatorExample()
+    total_cost = 0
+    trueDataCols = ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2'] + ['outside']
+    for i in range(len(simulator.data)):
+        true_data = simulator.data.iloc[i]
+        true_data = true_data[trueDataCols]
+        true_data = dict(true_data)
+        update_true_state(true_data)
 
-    sensor_data = simulator.timestep()
-    actions_dict = get_action(sensor_data)   
-    total_cost += simulator.cost_timestep(actions_dict)
+        sensor_data = simulator.timestep()
+        actions_dict = get_action(sensor_data)   
+        total_cost += simulator.cost_timestep(actions_dict)
 
-
-print(f"Total cost for the day: {total_cost} cents")
+    print(f"Total cost for the day: {total_cost} cents")
