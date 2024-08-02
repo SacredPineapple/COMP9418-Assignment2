@@ -71,6 +71,7 @@ class SmartBuilding:
         # Variance decays a little from its previous value, but also
         # increases per tick based on the uncertainty of movement,
         # proportional to the amount of movement experienced.
+        self.prev_means = self.state_means
         self.state_means = self.state_means @ self.t_matrix
         self.state_vars = self.state_vars @ self.t_matrix_sq + 12 * (self.state_means ** 2)
     
@@ -82,7 +83,10 @@ class SmartBuilding:
         for sensor_name, data in sensor_data.items():
             if sensor_name in self.sensors.keys():
                 self.sensors[sensor_name].update(data)
-                self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
+                if sensor_name.startswith("door"):
+                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrix)
+                else:
+                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
 
     def normalize(self):
         norm_const = 40 / sum(self.state_means)
