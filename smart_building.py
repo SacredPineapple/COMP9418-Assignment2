@@ -35,14 +35,15 @@ class SmartBuilding:
         #   - state_vars stores the variance of each Gaussian for each area
         #
         # Transitions are assumed to work as below, with an example for room 24:
+        # If X_24 = t24_24*Xp24 + t22_24*Xp22 + t28_24*Xp28
         # mu_24 = t24_24*mu_p24 + t22_24*mu_p22 + t28_24*mu_p28
         # var_24 = t24_24^2*var_p24 + t22_24^2*var_p22 + t28_24^2*var_p28
         #  
-        # NOTE: This means that variance decays towards zero over time. Makes sense for a normal transition 
-        # matrix as we're approaching the limiting state, however of course this isn't really a perfect
+        # NOTE: This means that variance decays towards zero over time. Makes sense for a normal 
+        # Markov chain as we're approaching the limiting state, however of course this isn't really a perfect
         # Markov process. I suppose evidence variables can bring the variance back up?
         self.state_means = np.array([40] + [0]*(self.nAreas - 1))
-        self.state_vars = np.array([9] + [0.25]*(self.nAreas - 1))
+        self.state_vars = np.array([9] + [0.01]*(self.nAreas - 1))
 
         # Initialise sensors that will be used for evidencing.
         self.sensors = {
@@ -63,14 +64,15 @@ class SmartBuilding:
             'robot1': RobotSensor(),
             'robot2': RobotSensor(),
         }
-    
 
     ### Increment one tick (15 seconds)
     def tick(self):
         # Adjust the state_means and state_vars as by the transition matrix.
-        # Variance will also increase per tick based on the uncertainty of movement.
+        # Variance decays a little from its previous value, but also
+        # increases per tick based on the uncertainty of movement,
+        # proportional to the amount of movement experienced.
         self.state_means = self.state_means @ self.t_matrix
-        self.state_vars = self.state_vars @ self.t_matrix_sq + 2.5 * self.state_means
+        self.state_vars = self.state_vars @ self.t_matrix_sq + 12 * (self.state_means ** 2)
     
     ### Incorporate the evidence from the sensor data to the current model. 
     def apply_evidence(self, sensor_data):
@@ -81,6 +83,11 @@ class SmartBuilding:
             if sensor_name in self.sensors.keys():
                 self.sensors[sensor_name].update(data)
                 self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
+
+    def normalize(self):
+        norm_const = 40 / sum(self.state_means)
+        self.state_means = norm_const * self.state_means
+        self.state_vars = (norm_const ** 2) * self.state_vars
     
     ### Query the network to return the normal distributions representing each room's occupancy.
     def query(self):
