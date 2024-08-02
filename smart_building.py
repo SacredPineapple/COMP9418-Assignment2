@@ -91,7 +91,8 @@ class SmartBuilding:
     
     ### Query the network to return the normal distributions representing each room's occupancy.
     def query(self):
-        # area_params = [{'mean': mean, 'var': var} for mean, var in zip(self.state_means, self.state_vars)]
-        # return {self.idx_to_name[i]: area_params[i] for i in range(self.nAreas)}
+        # Avoiding div-by-zero errors, ensuring variance is not 0
+        self.state_vars = np.maximum(self.state_vars, 0.0001)
+
         return self.state_means[1:35], self.state_vars[1:35]
     
