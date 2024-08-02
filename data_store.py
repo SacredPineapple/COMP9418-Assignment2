@@ -92,7 +92,7 @@ def getTransitions():
                 neighboursDict[n] += [room]
 
     transitions = {
-        room: [(room, 0.8)] + [(n, 0.2 / len(neighbours)) for n in neighbours] 
+        room: [(room, 0.8)] + [(n, 0.2 / len(neighbours)) for n in neighbours]
         for room, neighbours in neighboursDict.items()
     }
 
