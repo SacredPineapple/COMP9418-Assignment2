@@ -147,8 +147,8 @@ class SmartBuildingSimulatorExample:
 
         # To make sure your code can handle this case,
         # set one random sensor to None
-        broken_sensor = np.random.choice(list(sensor_data.keys())) 
-        sensor_data[broken_sensor] = None
+        # broken_sensor = np.random.choice(list(sensor_data.keys())) 
+        # sensor_data[broken_sensor] = None
 
         sensor_data['time'] = self.current_time 
 

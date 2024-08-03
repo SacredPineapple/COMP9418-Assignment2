@@ -71,7 +71,7 @@ class SmartBuilding:
         # Variance decays a little from its previous value, but also increases per tick based on 
         # the uncertainty of movement, proportional to the amount of movement experienced.
         self.state_means = self.state_means @ self.t_matrix
-        self.state_vars = self.state_vars @ self.t_matrix_sq + 1 * (self.state_means ** 2)
+        self.state_vars = self.state_vars @ self.t_matrix_sq + 0.75 * (self.state_means ** 2)
     
     ### Incorporate the evidence from the sensor data to the current model. 
     def apply_evidence(self, sensor_data):

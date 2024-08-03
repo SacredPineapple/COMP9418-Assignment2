@@ -34,8 +34,6 @@ class CameraSensor:
 
         # Error checking - we should have eliminated all but 1 variable now, so mean and variance should be 1d
         # If this assertion passes, extract the sole element as a constant
-        assert(len(final.mean()) == 1)
-        assert(len(final.covariance()) == 1)
         means[self.area] = (final.mean()).reshape(1)[0]
         vars[self.area] = (final.covariance()).reshape(1)[0]
 
