@@ -58,7 +58,7 @@ for i, ns in getTransitions().items():
 
 avgTransitionRaw = np.load("avgTransitionRaw.npy")
 avgTransitionRedistributed = np.load("avgTransitionRedistributed.npy")
-smart_building = SmartBuilding(avgTransitionRaw)
+smart_building = SmartBuilding(avgTransitionRedistributed)
 
 step = 0
 true_state = None
