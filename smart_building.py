@@ -70,6 +70,10 @@ class SmartBuilding:
         # Adjust the state_means and state_vars as by the transition matrix.
         # Variance decays a little from its previous value, but also increases per tick based on 
         # the uncertainty of movement, proportional to the amount of movement experienced.
+        # Variance decays a little from its previous value, but also
+        # increases per tick based on the uncertainty of movement,
+        # proportional to the amount of movement experienced.
+        self.prev_means = self.state_means
         self.state_means = self.state_means @ self.t_matrix
         self.state_vars = self.state_vars @ self.t_matrix_sq + 0.75 * (self.state_means ** 2)
     
@@ -81,6 +85,10 @@ class SmartBuilding:
         for sensor_name, data in sensor_data.items():
             if sensor_name in self.sensors.keys():
                 self.sensors[sensor_name].update(data)
+                
+            if sensor_name.startswith("door"):
+                self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrix)
+            else:
                 self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
         
         # After applying evidence, normalise. This 'propagates' the evidence throughout the whole network.
