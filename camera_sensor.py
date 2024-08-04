@@ -8,8 +8,6 @@ class CameraSensor:
         self.vars = 0.029439021584357853
         self.area = area
 
-    # Assuming here that the variance of the CameraSensor count is increasing in the count.
-    # TODO: Assess the reliability of the sensors. Do the sensors have a bias, is the above assumption correct, etc.
     def update(self, data):
         if data == None:
             self.count = None

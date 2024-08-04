@@ -11,7 +11,6 @@ class RobotSensor:
         self.idx_to_name = ['outside'] + ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2']
         self.name_to_idx = {'outside': 0} | {'r' + str(i): i for i in range(1, 35)} | {'c1': 35, 'c2': 36}
     
-    # TODO: Assess the reliability of the sensors, using the training data.
     def update(self, data):
         if data == None:
             self.count = None
