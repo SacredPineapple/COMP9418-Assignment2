@@ -56,9 +56,8 @@ for i, ns in getTransitions().items():
     for j, k in ns:
         t_m[i, j] = k
 
-avgTransitionRaw = np.load("avgTransitionRaw.npy")
-avgTransitionRedistributed = np.load("avgTransitionRedistributed.npy")
-smart_building = SmartBuilding(avgTransitionRedistributed)
+twoHourlyTransitions = np.load("avgTransitionRedistributed5double.npy")
+smart_building = SmartBuilding(twoHourlyTransitions)
 
 step = 0
 true_state = None
@@ -67,7 +66,11 @@ def update_true_state(data):
     true_state = data
 
 def get_action(sensor_data):
+<<<<<<< HEAD
+    # Step 1: Increment the network to the next step.
+=======
     # Step 1: Increment the network to the next step, incorporating the sensor data.
+>>>>>>> main
     smart_building.tick(sensor_data)
 
     # Step 2: Apply the evidence gained from the sensor data

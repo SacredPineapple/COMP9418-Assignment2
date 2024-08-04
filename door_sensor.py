@@ -18,6 +18,15 @@ class DoorSensor:
         self.vars = (0.1**2 * self.count**2) + 0.01
 
     # Apply evidence on the room distributions given the currently stored evidence.
+<<<<<<< HEAD
+    # Takes in the current means and vars, and returns the new means and vars.
+    def apply_evidence(self, means, vars, prev_means, t_matrix):
+        # if self.count == None:
+        #     return means, vars
+        
+        # if (prev_means[self.area1] + prev_means[self.area2]) == 0:
+        #     return means, vars
+=======
     # This is a pre-tick sensor - it takes in the means and vars of the previous
     # tick, and updates our beliefs about them. This step happens before
     # the transition matrix.
@@ -50,6 +59,7 @@ class DoorSensor:
         vars[self.area1], vars[self.area2] = final.covariance()[0, 0], final.covariance()[1, 1]
 
         return means, vars
+>>>>>>> main
         
         # # 1. Increase variance by some amount
         # vars[self.area1] += self.vars

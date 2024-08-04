@@ -1,6 +1,7 @@
 ### The central class that manages the network of the PGM (i.e. each room and its associated connections)
 import numpy as np
 import scipy.sparse as sp
+import datetime
 
 from camera_sensor import CameraSensor
 from door_sensor import DoorSensor
@@ -24,7 +25,7 @@ class SmartBuilding:
         #   - Afternoon work block
         #   - Late afternoon leaving office
         # t_m = sp.csr_array((self.nAreas, self.nAreas))
-        self.t_matrix = sp.csr_array(transition_matrix)
+        self.t_matrix = transition_matrix
         # Element-wise square, for the variance transitions
         self.t_matrix_sq = self.t_matrix * self.t_matrix
 
@@ -79,9 +80,14 @@ class SmartBuilding:
             sensor.update(sensor_data[sensor_name])
             sensor.apply_evidence(self.state_means, self.state_vars, self.t_matrix)
 
-        self.prev_means = self.state_means
-        self.state_means = self.state_means @ self.t_matrix
-        self.state_vars = self.state_vars @ self.t_matrix_sq + 0.75 * (self.state_means ** 2)
+        nine_am_datetime = datetime.datetime.combine(datetime.date.today(), datetime.time(9, 0, 15))
+        full_time_datetime = datetime.datetime.combine(datetime.date.today(), sensor_data['time'])
+        delta = full_time_datetime - nine_am_datetime
+        self.time_idx = delta.seconds // 3600 + delta.days * 24 + (delta.seconds > 0)
+        self.time_idx = self.time_idx // 2
+        
+        self.state_means = self.state_means @ self.t_matrix[self.time_idx]
+        self.state_vars = self.state_vars @ self.t_matrix_sq[self.time_idx] + 0.75 * (self.state_means ** 2)
 
         # Evidence on the remaining sensors
         for sensor_name, sensor in self.post_tick_sensors.items():
@@ -99,12 +105,13 @@ class SmartBuilding:
         # Each sensor is independent (we're assuming), so we can, for each sensor:
         # Create a factor for that sensor, join it in, evidence along that factor.
         # TODO: Are the sensors all independent? For instance, r3 camera + door sensor would have ties.
+        self.state_vars = np.maximum(self.state_vars, 0.01)
         for sensor_name, data in sensor_data.items():
             if sensor_name in self.sensors.keys():
                 self.sensors[sensor_name].update(data)
                 
                 if sensor_name.startswith("door"):
-                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrix)
+                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrix[self.time_idx])
                 else:
                     self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
         
