@@ -8,8 +8,6 @@ class CameraSensor:
         self.vars = 0.029439021584357853
         self.area = area
 
-    # Assuming here that the variance of the CameraSensor count is increasing in the count.
-    # TODO: Assess the reliability of the sensors. Do the sensors have a bias, is the above assumption correct, etc.
     def update(self, data):
         if data == None:
             self.count = None
@@ -18,7 +16,7 @@ class CameraSensor:
 
     # Apply evidence on the room distributions given the currently stored evidence.
     # Takes in the current means and vars, and returns the new means and vars.
-    def apply_evidence(self, means, vars):
+    def apply_evidence(self, means, vars, t_m):
         if self.count == None:
             return means, vars
         
@@ -32,8 +30,6 @@ class CameraSensor:
         joint = prior * camera
         final = joint.evidence(obs_num_ppl=self.count)
 
-        # Error checking - we should have eliminated all but 1 variable now, so mean and variance should be 1d
-        # If this assertion passes, extract the sole element as a constant
         means[self.area] = (final.mean()).reshape(1)[0]
         vars[self.area] = (final.covariance()).reshape(1)[0]
 

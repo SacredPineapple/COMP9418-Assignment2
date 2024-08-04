@@ -11,7 +11,6 @@ class RobotSensor:
         self.idx_to_name = ['outside'] + ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2']
         self.name_to_idx = {'outside': 0} | {'r' + str(i): i for i in range(1, 35)} | {'c1': 35, 'c2': 36}
     
-    # TODO: Assess the reliability of the sensors, using the training data.
     def update(self, data):
         if data == None:
             self.count = None
@@ -23,7 +22,7 @@ class RobotSensor:
 
     # Apply evidence on the room distributions given the currently stored evidence.
     # Takes in the current means and vars, and returns the new means and vars.
-    def apply_evidence(self, means, vars):
+    def apply_evidence(self, means, vars, t_m):
         if self.count == None:
             return means, vars
         # Create a temporary mini-Bayesian network:
@@ -36,8 +35,6 @@ class RobotSensor:
         joint = prior * robot
         final = joint.evidence(obs_num_ppl=self.count)
 
-        # Error checking - we should have eliminated all but 1 variable now, so mean and variance should be 1d
-        # If this assertion passes, extract the sole element as a constant
         means[self.room] = (final.mean()).reshape(1)[0]
         vars[self.room] = (final.covariance()).reshape(1)[0]
 
