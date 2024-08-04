@@ -9,7 +9,7 @@ from motion_sensor import MotionSensor
 from robot_sensor import RobotSensor
 
 class SmartBuilding:
-    def __init__(self, transition_matrix):
+    def __init__(self, transition_matrices):
         # outside has index 0, r1-34 have index 1-34, c1 and c2 have index 35, 36
         # Helper maps. Convention is that internally, we use the indexes (numbers) for everything,
         # and only convert it back to names when returning a query.
@@ -18,14 +18,11 @@ class SmartBuilding:
         self.name_to_idx = {'outside': 0} | {'r' + str(i): i for i in range(1, 35)} | {'c1': 35, 'c2': 36}
         self.min_vars = 0.0001
 
-        # TODO: Transition matrices that changes by time/phase of day?
-        #   - Early morning entering office
-        #   - Morning work block
-        #   - Lunch hour
-        #   - Afternoon work block
-        #   - Late afternoon leaving office
-        # t_m = sp.csr_array((self.nAreas, self.nAreas))
-        self.t_matrix = transition_matrix
+        # Stores the learned transition probabilities across the day
+        self.t_matrices = transition_matrices
+
+        self.time_idx = 0
+        self.t_matrix = sp.csr_array(self.t_matrices[self.time_idx])
         # Element-wise square, for the variance transitions
         self.t_matrix_sq = self.t_matrix * self.t_matrix
 
@@ -39,10 +36,6 @@ class SmartBuilding:
         # If X_24 = t24_24*Xp24 + t22_24*Xp22 + t28_24*Xp28
         # mu_24 = t24_24*mu_p24 + t22_24*mu_p22 + t28_24*mu_p28
         # var_24 = t24_24^2*var_p24 + t22_24^2*var_p22 + t28_24^2*var_p28
-        #  
-        # NOTE: This means that variance decays towards zero over time. Makes sense for a normal 
-        # Markov chain as we're approaching the limiting state, however of course this isn't really a perfect
-        # Markov process. I suppose evidence variables can bring the variance back up?
         self.state_means = np.array([40] + [0]*(self.nAreas - 1))
         self.state_vars = np.array([9] + [self.min_vars]*(self.nAreas - 1))
 
@@ -68,6 +61,22 @@ class SmartBuilding:
             'door_sensor4': DoorSensor(28, 35),
         }
 
+    ### According to the current time, update the chosen transition matrix
+    def update_t_matrix(self, time):
+        nine_am_datetime = datetime.datetime.combine(datetime.date.today(), datetime.time(9, 0, 15))
+        full_time_datetime = datetime.datetime.combine(datetime.date.today(), time)
+        delta = full_time_datetime - nine_am_datetime
+        
+        new_time = delta.seconds // 3600 + delta.days * 24 + (delta.seconds > 0)
+        new_time = new_time // 2
+
+        # If it is time to move to a new transition matrix, do so:
+        if new_time != self.time_idx:
+            self.time_idx = new_time
+            self.t_matrix = sp.csr_array(self.t_matrices[self.time_idx])
+            self.t_matrix_sq = self.t_matrix * self.t_matrix
+        
+
     ### Increment one tick (15 seconds)
     def tick(self, sensor_data):
         # Adjust the state_means and state_vars as by the transition matrix.
@@ -80,41 +89,16 @@ class SmartBuilding:
             sensor.update(sensor_data[sensor_name])
             sensor.apply_evidence(self.state_means, self.state_vars, self.t_matrix)
 
-        nine_am_datetime = datetime.datetime.combine(datetime.date.today(), datetime.time(9, 0, 15))
-        full_time_datetime = datetime.datetime.combine(datetime.date.today(), sensor_data['time'])
-        delta = full_time_datetime - nine_am_datetime
-        self.time_idx = delta.seconds // 3600 + delta.days * 24 + (delta.seconds > 0)
-        self.time_idx = self.time_idx // 2
+        self.update_t_matrix(sensor_data['time'])
+        self.state_means = self.state_means @ self.t_matrix
+        self.state_vars = self.state_vars @ self.t_matrix_sq + 0.75 * (self.state_means ** 2)
+        self.state_vars = np.maximum(self.state_vars, self.min_vars)
         
-        self.state_means = self.state_means @ self.t_matrix[self.time_idx]
-        self.state_vars = self.state_vars @ self.t_matrix_sq[self.time_idx] + 0.75 * (self.state_means ** 2)
-
         # Evidence on the remaining sensors
         for sensor_name, sensor in self.post_tick_sensors.items():
             sensor.update(sensor_data[sensor_name])
             sensor.apply_evidence(self.state_means, self.state_vars, self.t_matrix)
 
-        # After applying evidence, normalise. This 'propagates' the evidence throughout the whole network.
-        # For instance, if our evidence suggests there are a larger than expected number of people in a room than before,
-        # normalising down again reduces the expected number of people elsewhere.
-        self._normalize()
-    
-    ### Incorporate the evidence from the sensor data to the current model. 
-    # Archived method, no longer used.
-    def apply_evidence(self, sensor_data):
-        # Each sensor is independent (we're assuming), so we can, for each sensor:
-        # Create a factor for that sensor, join it in, evidence along that factor.
-        # TODO: Are the sensors all independent? For instance, r3 camera + door sensor would have ties.
-        self.state_vars = np.maximum(self.state_vars, 0.01)
-        for sensor_name, data in sensor_data.items():
-            if sensor_name in self.sensors.keys():
-                self.sensors[sensor_name].update(data)
-                
-                if sensor_name.startswith("door"):
-                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrix[self.time_idx])
-                else:
-                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
-        
         # After applying evidence, normalise. This 'propagates' the evidence throughout the whole network.
         # For instance, if our evidence suggests there are a larger than expected number of people in a room than before,
         # normalising down again reduces the expected number of people elsewhere.
@@ -132,3 +116,23 @@ class SmartBuilding:
 
         return self.state_means[1:35], self.state_vars[1:35]
     
+    ### Incorporate the evidence from the sensor data to the current model. 
+    # Archived method, no longer used.
+    def apply_evidence(self, sensor_data):
+        # Each sensor is independent (we're assuming), so we can, for each sensor:
+        # Create a factor for that sensor, join it in, evidence along that factor.
+        # TODO: Are the sensors all independent? For instance, r3 camera + door sensor would have ties.
+        self.state_vars = np.maximum(self.state_vars, 0.01)
+        for sensor_name, data in sensor_data.items():
+            if sensor_name in self.sensors.keys():
+                self.sensors[sensor_name].update(data)
+                
+                if sensor_name.startswith("door"):
+                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrices[self.time_idx])
+                else:
+                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
+        
+        # After applying evidence, normalise. This 'propagates' the evidence throughout the whole network.
+        # For instance, if our evidence suggests there are a larger than expected number of people in a room than before,
+        # normalising down again reduces the expected number of people elsewhere.
+        self._normalize()
