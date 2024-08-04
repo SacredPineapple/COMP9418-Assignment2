@@ -86,10 +86,10 @@ class SmartBuilding:
             if sensor_name in self.sensors.keys():
                 self.sensors[sensor_name].update(data)
                 
-            if sensor_name.startswith("door"):
-                self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrix)
-            else:
-                self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
+                if sensor_name.startswith("door"):
+                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrix)
+                else:
+                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
         
         # After applying evidence, normalise. This 'propagates' the evidence throughout the whole network.
         # For instance, if our evidence suggests there are a larger than expected number of people in a room than before,
