@@ -48,7 +48,7 @@ COST_LIGHT = 1
 COST_PERSON_NO_LIGHT = 4
 
 # Initialising classes, variables, etc.
-with open("redistributed.pkl", "rb") as f:
+with open("redistributed.pickle", "rb") as f:
     twoHourlyTransitions = pickle.load(f)
 
 smart_building = SmartBuilding(twoHourlyTransitions)
