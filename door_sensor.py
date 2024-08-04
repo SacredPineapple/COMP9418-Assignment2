@@ -49,7 +49,7 @@ class DoorSensor:
         if new_mean2 < 0:
             new_mean1 += new_mean2
             new_mean2 = 0      
-                      
+        
         means[self.area1] = new_mean1
         means[self.area2] = new_mean2
         
