@@ -76,11 +76,11 @@ class SmartBuilding:
         # proportional to the amount of movement experienced.
         self.prev_means = self.state_means
         
-        full_time = sensor_data['time']
         nine_am_datetime = datetime.datetime.combine(datetime.date.today(), datetime.time(9, 0, 15))
-        full_time_datetime = datetime.datetime.combine(datetime.date.today(), full_time)
+        full_time_datetime = datetime.datetime.combine(datetime.date.today(), sensor_data['time'])
         delta = full_time_datetime - nine_am_datetime
         self.time_idx = delta.seconds // 3600 + delta.days * 24 + (delta.seconds > 0)
+        self.time_idx = self.time_idx // 2
         
         self.state_means = self.state_means @ self.t_matrix[self.time_idx]
         self.state_vars = self.state_vars @ self.t_matrix_sq[self.time_idx] + 0.75 * (self.state_means ** 2)
