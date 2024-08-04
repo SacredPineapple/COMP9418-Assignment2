@@ -55,7 +55,10 @@ t_m = np.zeros((37, 37))
 for i, ns in getTransitions().items():
     for j, k in ns:
         t_m[i, j] = k
-smart_building = SmartBuilding(t_m)
+
+avgTransitionRaw = np.load("avgTransitionRaw.npy")
+avgTransitionRedistributed = np.load("avgTransitionRedistributed.npy")
+smart_building = SmartBuilding(avgTransitionRedistributed)
 
 step = 0
 true_state = None
@@ -69,8 +72,6 @@ def get_action(sensor_data):
 
     # Step 2: Apply the evidence gained from the sensor data
     smart_building.apply_evidence(sensor_data)
-
-    smart_building.normalize()
     
     # Step 3: Query the pgm to get the distribution of the number of people in each room
     means, vars = smart_building.query()
@@ -92,7 +93,7 @@ def get_action(sensor_data):
     #         str2 = f"{'ON' if light_status == 'on' else 'OFF'} "
     #         str3 = f"z-score: {round(zscore, 4)}"
     #         print(str1 + str2 + str3)
-    #         if np.abs(zscore) > 2:
+    #         if value > 0 and light_status == 'off':
     #             print("NORMAL DIST INSUFFICIENT HERE - OVERCONFIDENT")
     #         if value == 0 and light_status == 'on':
     #             print("TURNED LIGHT ON FOR NO REASON RIP")

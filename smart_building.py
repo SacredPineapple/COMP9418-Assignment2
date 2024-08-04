@@ -68,6 +68,8 @@ class SmartBuilding:
     ### Increment one tick (15 seconds)
     def tick(self):
         # Adjust the state_means and state_vars as by the transition matrix.
+        # Variance decays a little from its previous value, but also increases per tick based on 
+        # the uncertainty of movement, proportional to the amount of movement experienced.
         # Variance decays a little from its previous value, but also
         # increases per tick based on the uncertainty of movement,
         # proportional to the amount of movement experienced.

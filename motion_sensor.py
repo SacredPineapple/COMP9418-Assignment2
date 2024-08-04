@@ -14,4 +14,10 @@ class MotionSensor:
     def apply_evidence(self, means, vars):
         if self.response == None:
             return means, vars
+        
+        if self.response == 'no motion':
+            ...
+        elif self.response == 'motion':
+            ...
+        
         return means, vars
