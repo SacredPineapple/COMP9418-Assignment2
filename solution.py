@@ -48,7 +48,9 @@ COST_LIGHT = 1
 COST_PERSON_NO_LIGHT = 4
 
 # Initialising classes, variables, etc.
-twoHourlyTransitions = np.load("avgTransitionRedistributed5double.npy")
+with open("redistributed.pkl", "rb") as f:
+    twoHourlyTransitions = pickle.load(f)
+
 smart_building = SmartBuilding(twoHourlyTransitions)
 
 def get_action(sensor_data):
