@@ -15,8 +15,8 @@ class SmartBuilding:
         self.nAreas = 37
         self.idx_to_name = ['outside'] + ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2']
         self.name_to_idx = {'outside': 0} | {'r' + str(i): i for i in range(1, 35)} | {'c1': 35, 'c2': 36}
+        self.min_vars = 0.0001
 
-        # TODO: Learned parameters for transition probabilities will be initialised here, once this takes in a 'params' argument
         # TODO: Transition matrices that changes by time/phase of day?
         #   - Early morning entering office
         #   - Morning work block
@@ -43,7 +43,7 @@ class SmartBuilding:
         # Markov chain as we're approaching the limiting state, however of course this isn't really a perfect
         # Markov process. I suppose evidence variables can bring the variance back up?
         self.state_means = np.array([40] + [0]*(self.nAreas - 1))
-        self.state_vars = np.array([9] + [0.01]*(self.nAreas - 1))
+        self.state_vars = np.array([9] + [self.min_vars]*(self.nAreas - 1))
 
         # Initialise sensors that will be used for evidencing.
         self.sensors = {
@@ -73,7 +73,7 @@ class SmartBuilding:
         # proportional to the amount of movement experienced.
         self.prev_means = self.state_means
         self.state_means = self.state_means @ self.t_matrix
-        self.state_vars = self.state_vars @ self.t_matrix_sq + 12 * (self.state_means ** 2)
+        self.state_vars = self.state_vars @ self.t_matrix_sq + 0.75 * (self.state_means ** 2)
     
     ### Incorporate the evidence from the sensor data to the current model. 
     def apply_evidence(self, sensor_data):
@@ -83,19 +83,26 @@ class SmartBuilding:
         for sensor_name, data in sensor_data.items():
             if sensor_name in self.sensors.keys():
                 self.sensors[sensor_name].update(data)
-                if sensor_name.startswith("door"):
-                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrix)
-                else:
-                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
+                
+            if sensor_name.startswith("door"):
+                self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrix)
+            else:
+                self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
+        
+        # After applying evidence, normalise. This 'propagates' the evidence throughout the whole network.
+        # For instance, if our evidence suggests there are a larger than expected number of people in a room than before,
+        # normalising down again reduces the expected number of people elsewhere.
+        self._normalize()
 
-    def normalize(self):
+    def _normalize(self):
         norm_const = 40 / sum(self.state_means)
         self.state_means = norm_const * self.state_means
         self.state_vars = (norm_const ** 2) * self.state_vars
     
     ### Query the network to return the normal distributions representing each room's occupancy.
     def query(self):
-        # area_params = [{'mean': mean, 'var': var} for mean, var in zip(self.state_means, self.state_vars)]
-        # return {self.idx_to_name[i]: area_params[i] for i in range(self.nAreas)}
+        # Avoiding div-by-zero errors, ensuring variance is not 0
+        self.state_vars = np.maximum(self.state_vars, self.min_vars)
+
         return self.state_means[1:35], self.state_vars[1:35]
     
