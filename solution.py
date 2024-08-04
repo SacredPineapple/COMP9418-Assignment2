@@ -66,7 +66,7 @@ def get_action(sensor_data):
 # Accepts an input of form np.array([r1_mean, r2_mean, ...]), np.array([r1_vars, r2_vars, ...])
 # Returns dictionary of form {'lights1': 'on', 'lights2': 'on', ..., 'lights34': 'off'}
 # Compares the expected cost of turning a light on (COST_LIGHT) vs. turning a light off (some integral) to determine action.
-# Math was used to determine the integral formula, and is used here (maybe put this in the report?)
+# Not intended to be very readable - the integral form was simplified into another form, which is what is used here 
 def info_to_actions(mus, vars):
     sigmas = np.sqrt(vars)
     pow = - mus**2 / (2*vars)
@@ -74,9 +74,6 @@ def info_to_actions(mus, vars):
     term2 = mus * scipy.stats.norm.sf(0, loc=mus, scale=sigmas)
     cost_light_off = (term1 + term2) * COST_PERSON_NO_LIGHT
 
-    # for mu, var, cost in zip(mus, vars, cost_light_off):
-    #     print(f"N({mu}, {var}) has cost {cost})")
-    
     light_on = cost_light_off > COST_LIGHT
     actions_dict = {'lights' + str(i+1): 'on' if light_on[i] else 'off' for i in range(34)}
     return actions_dict

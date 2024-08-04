@@ -5,7 +5,7 @@ from gaussian_factor import GaussianFactor
 class RobotSensor:
     # Create a RobotSensor
     def __init__(self):
-        # From data, it looks like robots are perfect??
+        # From data, it looks like robots are perfect. Set 0 bias and very low variance.
         self.bias = 0
         self.vars = 0.0001
         self.idx_to_name = ['outside'] + ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2']

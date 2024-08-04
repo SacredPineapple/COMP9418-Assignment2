@@ -116,26 +116,4 @@ class SmartBuilding:
     def query(self):
         # Avoiding div-by-zero errors, ensuring variance is not 0
         self.state_vars = np.maximum(self.state_vars, self.min_vars)
-
         return self.state_means[1:35], self.state_vars[1:35]
-    
-    ### Incorporate the evidence from the sensor data to the current model. 
-    # Archived method, no longer used.
-    def apply_evidence(self, sensor_data):
-        # Each sensor is independent (we're assuming), so we can, for each sensor:
-        # Create a factor for that sensor, join it in, evidence along that factor.
-        # TODO: Are the sensors all independent? For instance, r3 camera + door sensor would have ties.
-        self.state_vars = np.maximum(self.state_vars, 0.01)
-        for sensor_name, data in sensor_data.items():
-            if sensor_name in self.sensors.keys():
-                self.sensors[sensor_name].update(data)
-                
-                if sensor_name.startswith("door"):
-                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars, self.prev_means, self.t_matrices[self.time_idx])
-                else:
-                    self.state_means, self.state_vars = self.sensors[sensor_name].apply_evidence(self.state_means, self.state_vars)
-        
-        # After applying evidence, normalise. This 'propagates' the evidence throughout the whole network.
-        # For instance, if our evidence suggests there are a larger than expected number of people in a room than before,
-        # normalising down again reduces the expected number of people elsewhere.
-        self._normalize()

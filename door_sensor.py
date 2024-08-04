@@ -17,15 +17,11 @@ class DoorSensor:
 
     # Apply evidence on the room distributions given the currently stored evidence.
     # This is a pre-tick sensor - it takes in the means and vars of the previous
-    # tick, and updates our beliefs about them. This step happens before
-    # the transition matrix.
+    # tick, and updates our beliefs about them. This step happens before the transition matrix.
     def apply_evidence(self, means, vars, t_m):
         if self.count == None:
             return means, vars
         
-        # We locally pre-empt the learned transition probabilities given the door sensor data
-        # self.count comes from: movement from 1->2 + movement from 2->1
-        #
         # Example scenario:
         # If previously there were 100 people in area 1, 10 people in area 2, and we have transition probabilities
         # 1->2: 10%, 2->1: 20%, we get (100*10%) + (10*20%) = 12 as our expected (mean) door sensor reading.
