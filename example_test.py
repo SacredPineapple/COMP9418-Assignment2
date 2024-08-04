@@ -161,9 +161,6 @@ class SmartBuildingSimulatorExample:
         actions_dict is a dictionary that maps from action strings to either 'on' or 'off'
         '''
         cost = 0
-        elec_cost = 0
-        prod_cost = 0
-
         # do actions
         if actions_dict is not None:
             for key in actions_dict:
@@ -174,47 +171,17 @@ class SmartBuildingSimulatorExample:
             room_num = 'r' + (light[6:]) # extract number from string
             if state == 'on':
                 cost += self.electricity_price
-                elec_cost += self.electricity_price
             elif state == 'off':
                 cost += self.productivity_cost*self.room_occupancy[room_num]
-                prod_cost += self.productivity_cost*self.room_occupancy[room_num]
             else:
                 raise Exception("Invalid light state")
-        return cost, elec_cost, prod_cost
-    
-    def optimal_timestep(self):
-        '''
-        calculates the optimal cost incurred in the previous 15 seconds
-        actions_dict is a dictionary that maps from action strings to either 'on' or 'off'
-        '''
-        cost = 0
-        elec_cost = 0
-        prod_cost = 0
+        return cost
 
-        for area, occupancy in self.room_occupancy.items():
-            if occupancy > 0 and area[0] == 'r':
-                elec_cost += 1
-                cost += 1
+simulator = SmartBuildingSimulatorExample()
+total_cost = 0
+for i in range(len(simulator.data)):
+    sensor_data = simulator.timestep()
+    actions_dict = get_action(sensor_data)   
+    total_cost += simulator.cost_timestep(actions_dict)
 
-        return cost, elec_cost, prod_cost
-
-if __name__ == "__main__":
-    simulator = SmartBuildingSimulatorExample()
-    total_cost, total_elec_cost, total_prod_cost = 0, 0, 0
-    ideal_cost, ideal_elec_cost, ideal_prod_cost = 0, 0, 0
-    trueDataCols = ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2'] + ['outside']
-    for i in range(len(simulator.data)):
-        sensor_data = simulator.timestep()
-        actions_dict = get_action(sensor_data)   
-        cost, elec_cost, prod_cost = simulator.cost_timestep(actions_dict)
-        total_cost += cost
-        total_elec_cost += elec_cost
-        total_prod_cost += prod_cost
-
-        cost, elec_cost, prod_cost = simulator.optimal_timestep()
-        ideal_cost += cost
-        ideal_elec_cost += elec_cost
-        ideal_prod_cost += prod_cost
-
-    print(f"Total cost for the day: {total_cost} cents. {total_elec_cost} on lights, {total_prod_cost} on prod.")
-    print(f"Ideal arrangement: {ideal_cost} cents. {ideal_elec_cost} on lights, {ideal_prod_cost} on prod.")
+print(f"Total cost for the day: {total_cost} cents")
