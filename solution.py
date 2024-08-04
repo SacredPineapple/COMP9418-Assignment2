@@ -56,8 +56,8 @@ for i, ns in getTransitions().items():
     for j, k in ns:
         t_m[i, j] = k
 
-avgTransitionRedistributed = np.load("avgTransitionRedistributed5double.npy")
-smart_building = SmartBuilding(avgTransitionRedistributed)
+twoHourlyTransitions = np.load("avgTransitionRedistributed5double.npy")
+smart_building = SmartBuilding(twoHourlyTransitions)
 
 step = 0
 true_state = None
