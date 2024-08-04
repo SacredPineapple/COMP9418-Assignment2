@@ -10,15 +10,15 @@ from robot_sensor import RobotSensor
 
 class SmartBuilding:
     def __init__(self, transition_matrices):
+        self.nAreas = 37
+        self.min_vars = 0.0001
         # outside has index 0, r1-34 have index 1-34, c1 and c2 have index 35, 36
         # Helper maps. Convention is that internally, we use the indexes (numbers) for everything,
         # and only convert it back to names when returning a query.
-        self.nAreas = 37
         self.idx_to_name = ['outside'] + ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2']
         self.name_to_idx = {'outside': 0} | {'r' + str(i): i for i in range(1, 35)} | {'c1': 35, 'c2': 36}
-        self.min_vars = 0.0001
 
-        # Stores the learned transition probabilities across the day
+        # Stores the learned transition probabilities across all timesteps
         self.t_matrices = transition_matrices
 
         self.time_idx = 0
@@ -62,7 +62,7 @@ class SmartBuilding:
         }
 
     ### According to the current time, update the chosen transition matrix
-    def update_t_matrix(self, time):
+    def _update_t_matrix(self, time):
         nine_am_datetime = datetime.datetime.combine(datetime.date.today(), datetime.time(9, 0, 15))
         full_time_datetime = datetime.datetime.combine(datetime.date.today(), time)
         delta = full_time_datetime - nine_am_datetime
@@ -76,7 +76,6 @@ class SmartBuilding:
             self.t_matrix = sp.csr_array(self.t_matrices[self.time_idx])
             self.t_matrix_sq = self.t_matrix * self.t_matrix
         
-
     ### Increment one tick (15 seconds)
     def tick(self, sensor_data):
         # Adjust the state_means and state_vars as by the transition matrix.
@@ -89,11 +88,15 @@ class SmartBuilding:
             sensor.update(sensor_data[sensor_name])
             sensor.apply_evidence(self.state_means, self.state_vars, self.t_matrix)
 
-        self.update_t_matrix(sensor_data['time'])
+        self._update_t_matrix(sensor_data['time'])
+        # Transition throughout the states, adjusting the means and variances accordingly
+        # Variance is also upticked by an 'uncertainty of movement' term proportional to
+        # the square of how many people we predict to be in that area. This means that the 
+        # increase in standard deviation is proportional to the number of people.
         self.state_means = self.state_means @ self.t_matrix
-        self.state_vars = self.state_vars @ self.t_matrix_sq + 0.75 * (self.state_means ** 2)
+        self.state_vars = self.state_vars @ self.t_matrix_sq + 0.125 * (self.state_means ** 2)
         self.state_vars = np.maximum(self.state_vars, self.min_vars)
-        
+
         # Evidence on the remaining sensors
         for sensor_name, sensor in self.post_tick_sensors.items():
             sensor.update(sensor_data[sensor_name])

@@ -32,7 +32,6 @@ import ast
 
 # import the function written by the student
 from solution import get_action
-from solution import update_true_state
 
 # simulator code
 class Person:    
@@ -205,11 +204,6 @@ if __name__ == "__main__":
     ideal_cost, ideal_elec_cost, ideal_prod_cost = 0, 0, 0
     trueDataCols = ['r' + str(i) for i in range(1, 35)] + ['c1', 'c2'] + ['outside']
     for i in range(len(simulator.data)):
-        true_data = simulator.data.iloc[i]
-        true_data = true_data[trueDataCols]
-        true_data = dict(true_data)
-        update_true_state(true_data)
-
         sensor_data = simulator.timestep()
         actions_dict = get_action(sensor_data)   
         cost, elec_cost, prod_cost = simulator.cost_timestep(actions_dict)

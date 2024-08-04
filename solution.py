@@ -49,14 +49,7 @@ COST_PERSON_NO_LIGHT = 4
 
 # Initialising classes, variables, etc.
 twoHourlyTransitions = np.load("avgTransitionRedistributed5double.npy")
-print(f"Loading in transition matrix: has dimensions {twoHourlyTransitions.shape}")
 smart_building = SmartBuilding(twoHourlyTransitions)
-
-step = 0
-true_state = None
-def update_true_state(data):
-    global true_state
-    true_state = data
 
 def get_action(sensor_data):
     # Step 1: Increment the network to the next step, incorporating the sensor data.
@@ -67,26 +60,6 @@ def get_action(sensor_data):
 
     # Step 3: Convert each room's distribution into a decision about turning light on/off
     actions = info_to_actions(means, vars)
-
-    # Printing for debugging / seeing whats happening
-    # global step
-    # if step % 500 == 0:
-    #     print(f"----------------Time {step}----------------")
-    #     for i in range(34):
-    #         mu, sigma = means[i], np.sqrt(vars[i])
-    #         value = true_state['r'+str(i+1)]
-    #         zscore = (value - mu) / sigma
-    #         light_status = actions['lights' + str(i+1)]
-
-    #         str1 = f"Room {i+1}: {value} ~ N({round(mu, 4)}, {round(sigma, 4)}): "
-    #         str2 = f"{'ON' if light_status == 'on' else 'OFF'} "
-    #         str3 = f"z-score: {round(zscore, 4)}"
-    #         print(str1 + str2 + str3)
-    #         if value > 0 and light_status == 'off':
-    #             print("NORMAL DIST INSUFFICIENT HERE - OVERCONFIDENT")
-    #         if value == 0 and light_status == 'on':
-    #             print("TURNED LIGHT ON FOR NO REASON RIP")
-    # step += 1
 
     return actions
 

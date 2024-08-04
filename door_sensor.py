@@ -1,3 +1,5 @@
+import numpy as np
+
 from gaussian_factor import GaussianFactor
 
 class DoorSensor:
@@ -12,9 +14,6 @@ class DoorSensor:
             self.count = None
             return
         self.count = data
-
-        # Uh
-        self.vars = (0.1**2 * self.count**2) + 0.01
 
     # Apply evidence on the room distributions given the currently stored evidence.
     # This is a pre-tick sensor - it takes in the means and vars of the previous
@@ -32,12 +31,13 @@ class DoorSensor:
         # 1->2: 10%, 2->1: 20%, we get (100*10%) + (10*20%) = 12 as our expected (mean) door sensor reading.
         #
         # We can create a Gaussian factor for the door sensor, mean
-        # (mu1 * t_1-2) + (mu2 * t_2-1), variance as determined from data.
+        # (mu1 * t_1-2) + (mu2 * t_2-1), variance proportional to the mean
         # Evidencing on this will give us new estimates for the (previous) mean and variance.
         prev_area1 = GaussianFactor(('num_ppl1',), mu=means[self.area1], sigma=vars[self.area1])
         prev_area2 = GaussianFactor(('num_ppl2',), mu=means[self.area2], sigma=vars[self.area2])
-        transitions = [t_m[self.area1, self.area2], t_m[self.area2, self.area1]]
-        door_sensor = GaussianFactor(('door_reading', 'num_ppl1', 'num_ppl2',), beta=transitions, b_mean=self.bias, b_var=self.vars)
+        transitions = np.array([t_m[self.area1, self.area2], t_m[self.area2, self.area1]])
+        b_variance = np.abs(0.216 * transitions @ np.array([means[self.area1], means[self.area2]])) + 0.0001
+        door_sensor = GaussianFactor(('door_reading', 'num_ppl1', 'num_ppl2',), beta=transitions, b_mean=self.bias, b_var=b_variance)
 
         joint = door_sensor * prev_area1 * prev_area2
         final = joint.evidence(door_reading=self.count)
