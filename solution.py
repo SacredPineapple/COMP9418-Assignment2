@@ -67,11 +67,11 @@ def update_true_state(data):
     true_state = data
 
 def get_action(sensor_data):
-    # Step 1: Increment the network to the next step.
-    smart_building.tick()
+    # Step 1: Increment the network to the next step, incorporating the sensor data.
+    smart_building.tick(sensor_data)
 
     # Step 2: Apply the evidence gained from the sensor data
-    smart_building.apply_evidence(sensor_data)
+    # smart_building.apply_evidence(sensor_data)
     
     # Step 3: Query the pgm to get the distribution of the number of people in each room
     means, vars = smart_building.query()

@@ -46,17 +46,13 @@ class SmartBuilding:
         self.state_vars = np.array([9] + [self.min_vars]*(self.nAreas - 1))
 
         # Initialise sensors that will be used for evidencing.
-        self.sensors = {
+        self.post_tick_sensors = {
             'motion_sensor1': MotionSensor(1),
             'motion_sensor2': MotionSensor(14),
             'motion_sensor3': MotionSensor(19),
             'motion_sensor4': MotionSensor(28),
             'motion_sensor5': MotionSensor(29),
             'motion_sensor6': MotionSensor(32),
-            'door_sensor1': DoorSensor(2, 3),
-            'door_sensor2': DoorSensor(35, 36),
-            'door_sensor3': DoorSensor(20, 26),
-            'door_sensor4': DoorSensor(28, 35),
             'camera1': CameraSensor(3),
             'camera2': CameraSensor(21),
             'camera3': CameraSensor(25),
@@ -64,20 +60,41 @@ class SmartBuilding:
             'robot1': RobotSensor(),
             'robot2': RobotSensor(),
         }
+        self.pre_tick_sensors = {
+            'door_sensor1': DoorSensor(2, 3),
+            'door_sensor2': DoorSensor(35, 36),
+            'door_sensor3': DoorSensor(20, 26),
+            'door_sensor4': DoorSensor(28, 35),
+        }
 
     ### Increment one tick (15 seconds)
-    def tick(self):
+    def tick(self, sensor_data):
         # Adjust the state_means and state_vars as by the transition matrix.
         # Variance decays a little from its previous value, but also increases per tick based on 
         # the uncertainty of movement, proportional to the amount of movement experienced.
-        # Variance decays a little from its previous value, but also
-        # increases per tick based on the uncertainty of movement,
-        # proportional to the amount of movement experienced.
+        
+        # Evidence on door sensors first, as they give us information on the previous tick's distribution,
+        # rather than the current one
+        for sensor_name, sensor in self.pre_tick_sensors.items():
+            sensor.update(sensor_data[sensor_name])
+            sensor.apply_evidence(self.state_means, self.state_vars, self.t_matrix)
+
         self.prev_means = self.state_means
         self.state_means = self.state_means @ self.t_matrix
         self.state_vars = self.state_vars @ self.t_matrix_sq + 0.75 * (self.state_means ** 2)
+
+        # Evidence on the remaining sensors
+        for sensor_name, sensor in self.post_tick_sensors.items():
+            sensor.update(sensor_data[sensor_name])
+            sensor.apply_evidence(self.state_means, self.state_vars, self.t_matrix)
+
+        # After applying evidence, normalise. This 'propagates' the evidence throughout the whole network.
+        # For instance, if our evidence suggests there are a larger than expected number of people in a room than before,
+        # normalising down again reduces the expected number of people elsewhere.
+        self._normalize()
     
     ### Incorporate the evidence from the sensor data to the current model. 
+    # Archived method, no longer used.
     def apply_evidence(self, sensor_data):
         # Each sensor is independent (we're assuming), so we can, for each sensor:
         # Create a factor for that sensor, join it in, evidence along that factor.

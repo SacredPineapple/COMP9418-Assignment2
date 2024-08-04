@@ -11,7 +11,7 @@ class MotionSensor:
 
     # Apply evidence on the room distributions given the currently stored evidence.
     # Takes in the current means and vars, and returns the new means and vars.
-    def apply_evidence(self, means, vars):
+    def apply_evidence(self, means, vars, t_m):
         if self.response == None:
             return means, vars
         
